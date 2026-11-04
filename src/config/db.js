@@ -1,39 +1,88 @@
+import mysql from 'mysql2/promise';
+import { drizzle } from 'drizzle-orm/mysql2';
+import * as schema from '../db/index.js';
+import { initialTables } from '../db/test/index.js';
+
 const isDevOrTest = ['development', 'test'].includes(process.env.NODE_ENV || 'development');
 
 class InMemoryAdapter {
-  constructor() {
-    this.tables = {
-      users: [
-        { id: 1, name: 'Dev User', email: 'dev@example.com', role: 'admin' }
-      ]
-    };
+  constructor(seedData = initialTables) {
+    this.seedData = seedData;
+    this.resetAll();
   }
 
-  async select(table, filterFn = null) {
-    const data = this.tables[table] || [];
+  resetAll() {
+    this.tables = JSON.parse(JSON.stringify(this.seedData));
+  }
+
+  async select(tableName, filterFn = null) {
+    const data = this.tables[tableName] || [];
     return filterFn ? data.filter(filterFn) : [...data];
   }
 
-  async insert(table, record) {
-    if (!this.tables[table]) this.tables[table] = [];
+  async insert(tableName, record) {
+    if (!this.tables[tableName]) this.tables[tableName] = [];
     const newRecord = { id: Date.now(), ...record };
-    this.tables[table].push(newRecord);
+    this.tables[tableName].push(newRecord);
     return newRecord;
   }
 
-  async clear(table) {
-    this.tables[table] = [];
+  async clear(tableName) {
+    this.tables[tableName] = [];
   }
 }
 
-class LiveDatabaseAdapter {
-  async select(table, filterFn) {
-    throw new Error('Live database connection not configured yet');
+class DrizzleAdapter {
+  constructor() {
+    this.client = null;
+    this.drizzle = null;
   }
 
-  async insert(table, record) {
-    throw new Error('Live database connection not configured yet');
+  getDrizzle() {
+    if (!this.drizzle) {
+      this.client = mysql.createPool({
+        host: process.env.DB_HOST || '127.0.0.1',
+        port: Number(process.env.DB_PORT) || 3306,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 10
+      });
+
+      this.drizzle = drizzle(this.client, { schema, mode: 'default' });
+    }
+    return this.drizzle;
+  }
+
+  async select(tableName, filterFn = null) {
+    const tableSchema = schema[tableName];
+    if (!tableSchema) {
+      throw new Error(`Table schema for "${tableName}" not found in src/db/schema/index.js`);
+    }
+
+    const db = this.getDrizzle();
+    const rows = await db.select().from(tableSchema);
+    return filterFn ? rows.filter(filterFn) : rows;
+  }
+
+  async insert(tableName, record) {
+    const tableSchema = schema[tableName];
+    if (!tableSchema) {
+      throw new Error(`Table schema for "${tableName}" not found in src/db/schema/index.js`);
+    }
+
+    const db = this.getDrizzle();
+    const [result] = await db.insert(tableSchema).values(record);
+    return { id: result.insertId, ...record };
+  }
+
+  async clear(tableName) {
+    const tableSchema = schema[tableName];
+    if (tableSchema) {
+      const db = this.getDrizzle();
+      await db.delete(tableSchema);
+    }
   }
 }
 
-export const db = isDevOrTest ? new InMemoryAdapter() : new LiveDatabaseAdapter();
+export const db = isDevOrTest ? new InMemoryAdapter() : new DrizzleAdapter();

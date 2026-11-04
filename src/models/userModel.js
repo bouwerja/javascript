@@ -1,4 +1,3 @@
-// src/models/userModel.js
 import { db } from '../config/db.js';
 
 export class UserModel {
