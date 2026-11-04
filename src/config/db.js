@@ -11,6 +11,10 @@ class InMemoryAdapter {
     this.resetAll();
   }
 
+  getClient() {
+    return null;
+  }
+
   resetAll() {
     this.tables = JSON.parse(JSON.stringify(this.seedData));
   }
@@ -52,6 +56,10 @@ class DrizzleAdapter {
       this.drizzle = drizzle(this.client, { schema, mode: 'default' });
     }
     return this.drizzle;
+  }
+
+  getClient() {
+    return this.getDrizzle();
   }
 
   async select(tableName, filterFn = null) {

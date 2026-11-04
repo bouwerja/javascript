@@ -1,9 +1,9 @@
 import db from "../config/db.js";
 
 export class DiscordModel {
-    constructor({ id, message}) {
+    constructor({ id, createdAt = new Date().now() }) {
         this.id = id;
-        this.message = message;
+        this.createdAt = createdAt;
     }
 
     toJSON() {
@@ -13,7 +13,10 @@ export class DiscordModel {
         };
     }
 
-    static async getMessage(id) {
-        const records = await db.select("message");
+}
+
+class DiscrodMessage extends DiscordModel {
+    constructor(id) {
+        super(id);
     }
 }
