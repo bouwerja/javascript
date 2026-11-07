@@ -18,9 +18,9 @@
     "dev": "node --watch --env-file=.env.development src/server.js",
     "start": "node --env-file=.env src/server.js",
     "test-jason": "NODE_ENV=test node --test tests/**/*.test.js",
-    "test-jason:models": "NODE_ENV=test node --test tests/jason/models",
-    "test-jason:controllers": "NODE_ENV=test node --test tests/jason/controllers",
-    "test-jason:integration": "NODE_ENV=test node --test tests/jason/integration"
+    "test-jason:models": "NODE_ENV=test node --test tests/jason/models/*.test.js",
+    "test-jason:controllers": "NODE_ENV=test node --test tests/jason/controllers/*.test.js",
+    "test-jason:integration": "NODE_ENV=test node --test tests/jason/integration/*.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -30,6 +30,7 @@
     "mysql2": "^3.24.6"
   },
   "devDependencies": {
+    "better-sqlite3": "^13.0.3",
     "drizzle-kit": "^0.31.11"
   }
 }
