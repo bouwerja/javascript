@@ -27,4 +27,12 @@ export async function seedTestDatabase(drizzleClient, customCounts = {}) {
 
     await drizzleClient.insert(products).values(fakeProducts);
   }
+
+  if (config.discordMessageCount > 0) {
+    const fakeMessages = Array.from({ length: config.messageCount }, (_, i) => ({
+      messageText: `Fake message number ${i + 1}`,
+      messageType: 1,
+      details: `{ "id": ${i + 1},  "messageText" : "Fake message number ${i + 1}, "messageType": 1 }`
+    }))
+  }
 }

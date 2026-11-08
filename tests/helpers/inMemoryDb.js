@@ -37,6 +37,14 @@ function createTablesFromSchema(sqliteInstance) {
       price REAL NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS discord_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_text TEXT NOT NULL,
+      message_type INT NOT NULL,
+      details JSON,
+      created_at TIMESTAMP NOT NULL,
+    )
   `);
 }
 

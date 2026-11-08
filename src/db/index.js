@@ -2,13 +2,16 @@ import mysql from 'mysql2/promise';
 import { drizzle } from 'drizzle-orm/mysql2';
 import * as usersSchema from './users.js';
 import * as productsSchema from './products.js';
+import * as discordSchema from './discord.js';
 
 export * from './users.js';
 export * from './products.js';
+export * from './discord.js';
 
 export const schema = {
   ...usersSchema,
-  ...productsSchema
+  ...productsSchema,
+  ...discordSchema,
 };
 
 let dbInstance = null;

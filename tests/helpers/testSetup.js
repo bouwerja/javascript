@@ -1,9 +1,16 @@
+import { before, beforeEach } from 'node:test';
+import { initInMemoryDatabase, resetInMemoryDatabase } from './inMemoryDb.js';
+
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 
-import { db } from '../../src/config/db.js';
+before(async () => {
+  await initInMemoryDatabase();
+});
+
+beforeEach(async () => {
+  resetInMemoryDatabase();
+});
 
 export async function resetTestDatabase() {
-  if (typeof db.clear === 'function') {
-    await db.clear('users');
-  }
+  resetInMemoryDatabase();
 }

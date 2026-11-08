@@ -1,8 +1,8 @@
-import { eq, and, like, desc } from 'drizzle-orm';
-import { db, users } from '../db/index.js';
+import { eq, and, like, desc } from "drizzle-orm";
+import { db, users } from "../db/index.js";
 
 export class UserModel {
-  constructor({ id, name, email, role = 'user', createdAt = null }) {
+  constructor({ id, name, email, role = "user", createdAt = null }) {
     this.id = id;
     this.name = name;
     this.email = email;
@@ -16,7 +16,7 @@ export class UserModel {
       name: this.name,
       email: this.email,
       role: this.role,
-      createdAt: this.createdAt
+      createdAt: this.createdAt,
     };
   }
 
@@ -26,7 +26,10 @@ export class UserModel {
   }
 
   static async findById(id) {
-    const [row] = await db.select().from(users).where(eq(users.id, Number(id)));
+    const [row] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, Number(id)));
     return row ? new UserModel(row) : null;
   }
 
