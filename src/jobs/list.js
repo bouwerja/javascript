@@ -11,4 +11,10 @@ export const jobList = [
         cron: '*/1 * * * *',
     },
 
+    {
+        name: 'discord-message',
+        path: path.join(__dirname, 'services', 'discordMessage.js'),
+        cron: '*/1 * * * *',
+    },
+
 ];
