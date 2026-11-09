@@ -1,33 +1,74 @@
-import { eq } from "drizzle-orm";
-import { db, messages } from "../db/index.js";
+import { BaseModel } from './baseModel.js';
+import { discordMessages } from "../db/index.js";
 
-export class DiscordModel {
-  constructor({ id, text, type, details, createdAt }) {
-    this.id = id;
-    this.message = text;
+const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const GENERAL_CHANNEL = process.env.DISCORD_GENERAL_CHANNEL_ID
+
+export class DiscordModel extends BaseModel {
+  constructor({ id, message, type, details, createdAt }) {
+    super({ id, createdAt });
+    this.message = message;
     this.type = type;
     this.details = details;
-    this.createdAt = createdAt;
   }
 
-  toJSON() {
-    return {
-      id: this.id,
-      message: this.message,
-      type: this.type,
+  static async sendMessage(content) {
+
+    const payload = content.payload;
+
+    const response = await fetch(`https://discord.com/api/v10/channels/${GENERAL_CHANNEL}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bot ${BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Discord API Error [${response.status}]: ${JSON.stringify(errorData)}`);
+    }
+
+    const rawResult = await response.json();
+
+    const insertValues = {
+      discordId: rawResult.id,
+      discordChannel: rawResult.channel_id,
+      messageText: rawResult.content,
+      messageType: content.messageType,
+      details: rawResult,
     };
+
+    const result = await this.insertRecord(discordMessages, insertValues);
+
+    return result.id;
   }
 
-  static async create(messageData) {
-    const [result] = await db.insert(messages).values(messageData);
-    const newId = result.insertId || result.id;
-    return new DiscordModel({ id: newId, ...messageData });
+  static async getLastUserMessage() {
+
+    const response = await fetch(`https://discord.com/api/v10/channels/${GENERAL_CHANNEL}/messages?limit=1`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bot ${BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Discord API Error [${response.status}]: ${JSON.stringify(errorData)}`);
+    }
+
+    const rawResult = response.json();
+
+    return rawResult;
   }
 
   static async getMessage(id) {
     const result = await db
         .select()
-        .from(messages)
+        .from(discordMessages)
         .where(eq(messages.id, id));
 
     return new DiscordModel(result)

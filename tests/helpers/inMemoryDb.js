@@ -31,19 +31,34 @@ function createTablesFromSchema(sqliteInstance) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE IF NOT EXISTS products (
+    CREATE TABLE IF NOT EXISTS discord_messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      price REAL NOT NULL,
+      discord_id INTERGER NOT NULL,
+      discord_channel INTERGER NOT NULL,
+      message_text TEXT NOT NULL,
+      message_type_id INT NOT NULL,
+      details JSON,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE IF NOT EXISTS discord_messages (
+    CREATE TABLE IF NOT EXISTS discord_users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      message_text TEXT NOT NULL,
-      message_type INT NOT NULL,
-      details JSON,
-      created_at TIMESTAMP NOT NULL,
+      discord_user_id INTERGER NOT NULL,
+      display_name TEXT NOT NULL,
+      is_registered BINARY,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_details JSON,
+      updated_at DATETIME
+    );
+
+    CREATE TABLE IF NOT EXISTS event_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      db_schema TEXT NOT NULL,
+      table_name TEXT NOT NULL,
+      operation_type TEXT NOT NULL,
+      primary_key_id NOT NULL,
+      change_data JSON
     )
   `);
 }
