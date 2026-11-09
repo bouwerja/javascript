@@ -14,7 +14,7 @@ const messageDetails = {
 };
 
 (async () => {
-    DiscordModel.sendMessage(messageDetails);
+    await DiscordModel.sendMessage(messageDetails);
 
     if (parentPort) {
         parentPort.postMessage({ status: 'done' });
