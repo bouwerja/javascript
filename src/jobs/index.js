@@ -1,18 +1,9 @@
 import Bree from 'bree';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { jobList } from './list.js';
 
 export const bree = new Bree({
     root: false,
-    jobs: [
-        {
-            name: 'test',
-            path: path.join(__dirname, 'services', 'someJob.js'),
-            interval: '20s'
-        }
-    ],
+    jobs: jobList,
     workerMessageHandler: (metadata) => {
         if (metadata.message && (metadata.message['watch:import'] || metadata.message['watch:require'])) {
             return;
