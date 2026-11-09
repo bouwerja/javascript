@@ -14,13 +14,13 @@
   "author": "",
   "type": "module",
   "main": "src/server.js",
-  "scripts": {
+"scripts": {
     "dev": "node --watch --env-file=.env.development src/server.js",
     "start": "node --env-file=.env src/server.js",
-    "test-jason": "NODE_ENV=test node --test tests/**/*.test.js",
-    "test-jason:models": "NODE_ENV=test node --test tests/jason/models/*.test.js",
-    "test-jason:controllers": "NODE_ENV=test node --test tests/jason/controllers/*.test.js",
-    "test-jason:integration": "NODE_ENV=test node --test tests/jason/integration/*.test.js"
+    "test-jason": "NODE_ENV=test node --env-file=.env.development --test tests/jason/**/*.test.js",
+    "test-jason:models": "NODE_ENV=test node --env-file=.env.development --test tests/jason/models/*.test.js",
+    "test-jason:controllers": "NODE_ENV=test node --env-file=.env.development --test tests/jason/controllers/*.test.js",
+    "test-jason:integration": "NODE_ENV=test node --env-file=.env.development --test tests/jason/integration/*.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

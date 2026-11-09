@@ -1,13 +1,8 @@
 import { db } from "../config/db.js";
+import { BaseModel } from "./baseModel.js";
 
-export class FinanceModel {
-    constructor({ id }) {
-        this.id = id;
-    }
-
-    toJSON() {
-        return {
-            id: this.id,
-        };
+export class FinanceModel extends BaseModel {
+    constructor({ id, createdAt }) {
+        super({ id, createdAt });
     }
 }

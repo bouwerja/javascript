@@ -1,11 +1,11 @@
-import { mysqlTable, int, varchar, timestamp } from 'drizzle-orm/mysql-core';
+import { mysqlTable, int, varchar, json, timestamp } from 'drizzle-orm/mysql-core';
 
-export const eventLog = mysqlTable('products', {
+export const eventLog = mysqlTable('event_log', {
   eventId : int("id").autoincrement().primaryKey(),
-  eventDate: timestamp("event_date"),
+  eventDate: timestamp("event_date").defaultNow(),
   dbSchema: varchar("db_schema", { length: 255 }).notNull(),
+  tableName: varchar('table_name', { length: 255 }).notNull(),
   operationType: varchar("operation_type", { length: 255}).notNull(),
   primaryKeyId: int("primary_key_id").notNull(),
-  changeData: varchar("change_data").notNull(),
-  changeSource: varchar("change_source", { length: 255 }).notNull(),
+  changeData: json('change_data'),
 });
