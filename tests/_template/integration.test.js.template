@@ -1,0 +1,31 @@
+/**
+ * INTEGRATION TEST TEMPLATE
+ * Copy to tests/<your-name>/integration/<feature>Api.test.js and replace the placeholders.
+ */
+import { describe, test, beforeEach, afterEach } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { startTestServer, buildUser } from '../../helpers/index.js';
+
+describe('Users API', () => {
+  let api;
+
+  beforeEach(async () => {
+    api = await startTestServer();
+  });
+
+  afterEach(async () => {
+    await api.close();
+  });
+
+  test('describes the expected outcome here', async () => {
+    // Arrange: seed data directly through the model if needed
+    const user = await api.models.user.create(buildUser());
+
+    // Act: authenticated by default; pass { auth: false } to test 401s
+    const res = await api.request('GET', `/users/${user.id}`);
+
+    // Assert
+    assert.equal(res.status, 200);
+  });
+});

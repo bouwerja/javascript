@@ -1,0 +1,29 @@
+/**
+ * CONTROLLER TEST TEMPLATE
+ * Copy to tests/<your-name>/controllers/<controllerName>.test.js and replace the placeholders.
+ */
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { createUserController } from '../../../src/controllers/userController.js'; // <- your controller
+import { UserModel } from '../../../src/models/userModel.js';                      // <- the model it uses
+import { createInMemoryModel, buildUser, mockRequest, mockResponse } from '../../helpers/index.js';
+
+describe('userController', () => {
+  test('describes the expected outcome here', async () => {
+    // Arrange
+    const { model } = createInMemoryModel(UserModel);
+    const controller = createUserController({ userModel: model });
+    const req = mockRequest({ body: buildUser() });
+    const res = mockResponse();
+
+    // Act
+    await controller.create(req, res);
+
+    // Assert
+    assert.equal(res.statusCode, 201);
+  });
+
+  // Errors: controllers throw in Express 5, so use assert.rejects:
+  // await assert.rejects(controller.getById(mockRequest({ params: { id: '999' } }), mockResponse()), NotFoundError);
+});

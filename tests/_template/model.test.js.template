@@ -1,0 +1,22 @@
+/**
+ * MODEL TEST TEMPLATE
+ * Copy to tests/<your-name>/models/<modelName>.test.js and replace the placeholders.
+ */
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { UserModel } from '../../../src/models/userModel.js'; // <- your model
+import { createInMemoryModel, buildUser } from '../../helpers/index.js';
+
+describe('UserModel', () => {
+  test('describes the expected outcome here', async () => {
+    // Arrange: a real model with in-memory storage
+    const { model, auditLog, rows } = createInMemoryModel(UserModel);
+
+    // Act
+    const user = await model.create(buildUser());
+
+    // Assert
+    assert.ok(user.id);
+  });
+});
