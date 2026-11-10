@@ -21,7 +21,7 @@ export const errorHandler = (err, req, res, next) => {
     success: false,
     error: {
       message,
-      ...err(isDevelopment && { stack: err.stack }),
+      ...(isDevelopment && { stack: err.stack }),
     },
   });
 };
