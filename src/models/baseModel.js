@@ -16,15 +16,20 @@ export class BaseModel {
     static async logOperations({ action, caller, tableName, recordId = null, details = null }) {
 
         try {
+
+            if (!recordId) {
+                throw new Error("[BaseMode] Record affect is NULL.");
+            }
+
             await db.insert(eventLog).values({
                 operationType: action,
                 dbSchema: caller,
                 tableName,
-                primaryKeyId: recordId ? String(recordId) : null,
+                primaryKeyId: Number(recordId),
                 changeData: typeof details === 'object' ? JSON.stringify(details) : details,
             });
         } catch (error) {
-            console.error('[BaseMode] Fialed to write to event log:\n', error.message);
+            console.error('[BaseModel] Fialed to write to event log:\n', error.message);
         }
     }
 

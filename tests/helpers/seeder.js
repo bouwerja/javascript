@@ -1,5 +1,4 @@
 import { users } from '../../src/db/users.js';
-import { products } from '../../src/db/products.js';
 
 const DEFAULT_COUNTS = {
   usersCount: Number(process.env.SEED_USERS_COUNT) || 10,
@@ -17,15 +16,6 @@ export async function seedTestDatabase(drizzleClient, customCounts = {}) {
     }));
 
     await drizzleClient.insert(users).values(fakeUsers);
-  }
-
-  if (config.productsCount > 0) {
-    const fakeProducts = Array.from({ length: config.productsCount }, (_, i) => ({
-      name: `Product ${i + 1}`,
-      price: (Math.random() * 100 + 10).toFixed(2)
-    }));
-
-    await drizzleClient.insert(products).values(fakeProducts);
   }
 
   if (config.discordMessageCount > 0) {

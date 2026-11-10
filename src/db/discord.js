@@ -2,7 +2,7 @@ import { mysqlTable, int, varchar, binary, json, timestamp } from 'drizzle-orm/m
 
 export const discordMessages = mysqlTable('discord_messages', {
     id: int('id').autoincrement().primaryKey(),
-    discordId: int('discord_id').notNull(),
+    discordId: varchar('discord_id', { length: 25 }).notNull(),
     discordChannel: int('discord_channel').notNull(),
     messageText: varchar('message_text', { length: 255 }).notNull(),
     messageType: int('message_type_id').notNull(),
@@ -18,8 +18,8 @@ export const messageType = mysqlTable('discord_message_types', {
 
 export const discordUsers = mysqlTable('discord_users', {
     id: int('id').autoincrement().primaryKey(),
-    discordUserId: int('discord_user_id').notNull(),
-    displayName: varchar('display_name', { lenght: 255 }).notNull(),
+    discordUserId: varchar('discord_user_id', { length: 50 }).notNull(),
+    displayName: varchar('display_name', { length: 255 }).notNull(),
     isRegistered: binary('is_registed'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedDetails: json('updated_details'),

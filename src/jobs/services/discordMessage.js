@@ -18,5 +18,6 @@ const messageDetails = {
 
     if (parentPort) {
         parentPort.postMessage({ status: 'done' });
+        process.exit(0);
     }
 })();

@@ -1,4 +1,3 @@
-import { db } from "../config/db.js";
 import { BaseModel } from "./baseModel.js";
 
 export class FinanceModel extends BaseModel {

@@ -1,5 +1,6 @@
 import { BaseModel } from './baseModel.js';
-import { discordMessages } from "../db/index.js";
+import { db, discordMessages } from "../db/index.js";
+import { eq } from 'drizzle-orm';
 
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GENERAL_CHANNEL = process.env.DISCORD_GENERAL_CHANNEL_ID
@@ -60,7 +61,7 @@ export class DiscordModel extends BaseModel {
       throw new Error(`Discord API Error [${response.status}]: ${JSON.stringify(errorData)}`);
     }
 
-    const rawResult = response.json();
+    const rawResult = await response.json();
 
     return rawResult;
   }
@@ -69,7 +70,7 @@ export class DiscordModel extends BaseModel {
     const result = await db
         .select()
         .from(discordMessages)
-        .where(eq(messages.id, id));
+        .where(eq(discordMessages.id, id));
 
     return new DiscordModel(result)
   }

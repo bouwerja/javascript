@@ -65,6 +65,6 @@ function createTablesFromSchema(sqliteInstance) {
 
 export function resetInMemoryDatabase() {
     if (sqliteDb) {
-        sqliteDb.exec('DELETE FROM users; DELETE FROM products;');
+        sqliteDb.exec('DELETE FROM users;');
     }
 }
