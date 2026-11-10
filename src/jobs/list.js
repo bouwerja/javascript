@@ -1,20 +1,22 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const TASKS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'tasks');
+const taskPath = (file) => path.join(TASKS_DIR, file);
+
 
 export const jobList = [
-
-    {
-        name: 'test',
-        path: path.join(__dirname, 'services', 'someJob.js'),
-        cron: '*/1 * * * *',
+  {
+    name: 'discord-message',
+    path: taskPath('discordMessage.js'),
+    cron: '0 8 * * 1-5',               // 08:00 on weekdays
+    closeWorkerAfterMs: 2 * 60_000,    // 2 minutes
+    worker: {
+      workerData: {
+        messageType: 1,
+        content: 'Good morning. This is a scheduled test message.',
+      },
     },
-
-    {
-        name: 'discord-message',
-        path: path.join(__dirname, 'services', 'discordMessage.js'),
-        cron: '*/1 * * * *',
-    },
-
+  },
+  
 ];
