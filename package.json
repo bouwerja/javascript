@@ -17,10 +17,13 @@
   "scripts": {
     "dev": "node --watch --env-file=.env.development src/server.js",
     "start": "node --env-file=.env src/server.js",
-    "test-jason": "NODE_ENV=test node --env-file=.env.development --test tests/jason/**/*.test.js",
-    "test-jason:models": "NODE_ENV=test node --env-file=.env.development --test tests/jason/models/*.test.js",
-    "test-jason:controllers": "NODE_ENV=test node --env-file=.env.development --test tests/jason/controllers/*.test.js",
-    "test-jason:integration": "NODE_ENV=test node --env-file=.env.development --test tests/jason/integration/*.test.js"
+    "test": "node --test \"tests/**/*.test.js\"",
+    "test:watch": "node --test --watch \"tests/**/*.test.js\"",
+    "test:only": "node --test --test-only \"tests/**/*.test.js\"",
+    "test:models": "node --test \"tests/*/models/**/*.test.js\"",
+    "test:controllers": "node --test \"tests/*/controllers/**/*.test.js\"",
+    "test:integration": "node --test \"tests/*/integration/**/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/**\" \"tests/**/*.test.js\""
   },
   "dependencies": {
     "bree": "^9.2.9",
@@ -31,7 +34,6 @@
     "mysql2": "^3.24.6"
   },
   "devDependencies": {
-    "better-sqlite3": "^13.0.3",
     "drizzle-kit": "^0.31.11"
   }
 }
