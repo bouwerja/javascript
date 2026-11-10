@@ -1,100 +1,116 @@
-import { db, eventLog } from "../db/index.js";
-import { eq, getTableName } from "drizzle-orm";
+import { eq, getTableName } from 'drizzle-orm';
+import { eventLog } from '../db/eventLog.js';
+import { ConflictError } from '../errors.js';
+
 
 export class BaseModel {
-    constructor(data) {
-        this.id = data.id;
-        this.createdAt = data.createdAt;
+  constructor(db, table) {
+    if (new.target === BaseModel) {
+      throw new Error('BaseModel is abstract; extend it instead.');
+    }
+    if (!db || !table) {
+      throw new Error(`[${new.target.name}] db and table are required.`);
+    }
+    this.db = db;
+    this.table = table;
+    this.tableName = getTableName(table);
+  }
+
+
+  toRecord(row) {
+    return { ...row };
+  }
+
+
+  async findById(id) {
+    const [row] = await this.db
+      .select()
+      .from(this.table)
+      .where(eq(this.table.id, id));
+
+    return row ? this.toRecord(row) : null;
+  }
+
+  async findAll() {
+
+    const rows = await this.db.select().from(this.table);
+
+    return rows.map((row) => this.toRecord(row));
+  }
+
+
+  async insertRecord(payload, { conflictMessage = 'Record already exists' } = {}) {
+    if (!payload || typeof payload !== 'object') {
+      throw new Error(`[${this.constructor.name}] insertRecord requires a payload object.`);
     }
 
-    toJSON() {
-        return {
-            ...this
-        };
+    try {
+      const id = await this.db.transaction(async (tx) => {
+
+        const [{ id: newId }] = await tx.insert(this.table).values(payload).$returningId();
+
+        await this.#audit(tx, 'INSERT', newId, payload);
+
+        return newId;
+      });
+      return this.findById(id);
+    } catch (err) {
+      if (isDuplicateKey(err)) throw new ConflictError(conflictMessage, { cause: err });
+      throw err;
+    }
+  }
+
+  async updateRecord(id, payload, { conflictMessage = 'Record already exists' } = {}) {
+    if (!id || !payload || typeof payload !== 'object') {
+      throw new Error(`[${this.constructor.name}] updateRecord requires an id and a payload object.`);
     }
 
-    static async logOperations({ action, caller, tableName, recordId = null, details = null }) {
-
-        try {
-
-            if (!recordId) {
-                throw new Error("[BaseMode] Record affect is NULL.");
-            }
-
-            await db.insert(eventLog).values({
-                operationType: action,
-                dbSchema: caller,
-                tableName,
-                primaryKeyId: Number(recordId),
-                changeData: typeof details === 'object' ? JSON.stringify(details) : details,
-            });
-        } catch (error) {
-            console.error('[BaseModel] Fialed to write to event log:\n', error.message);
-        }
-    }
-
-    static async insertRecord(tableSchema, payload) {
+    try {
+      const updated = await this.db.transaction(async (tx) => {
+        const [result] = await tx.update(this.table).set(payload).where(eq(this.table.id, id));
         
-        if (!tableSchema || !payload) {
-            throw new Error("Missing values in INSERT:\n" + `TableSchema: ${tableSchema}\n` + `Payload: ${payload}\n`);
-        }
+        if (result.affectedRows === 0) return false;
 
-        const result = await db.insert(tableSchema).values(payload);
-        const insertedId = result.lastInsertRowid || result.insertId || result.id;
-        const tableName = getTableName(tableSchema);
-
-        const caller = `${this.name}`;
-
-        await this.logOperations({
-            action: 'INSERT',
-            caller,
-            tableName,
-            recordId: insertedId,
-            details: payload,
-        });
-
-        return { id: insertedId, ...payload };
-    }
-
-    static async updateRecord(tableSchema, id, payload) {
-
-        if (!tableSchema || !id || !payload) {
-            throw new Error("[BaseModel] Missing values in UPDATE:\n" + `TableSchema: ${tableSchema}\n` + `ID: ${id}\n` + `Payload: ${payload}\n`);
-        }
-
-        await db.update(tableSchema).set(payload).where(eq(tableSchema.id, id));
-
-        const caller = `${this.name}`;
-        const tableName = getTableName(tableSchema);
-
-        await this.logOperations({
-            action: 'UPDATE',
-            caller,
-            tableName,
-            recordId: id,
-            details: payload,
-        });
-
-        return { id, ...payload };
-    }
-
-    static async deleteRecord(tableSchema, id) {
-        if (!tableSchema || !id) {
-            throw new Error("[BaseModel] Missing values in DELETE:\n" + `TableSchema: ${tableSchema}\n` + `ID: ${id}\n`);
-        }
-
-        await db.delete(tableSchema).where(eq(tableSchema.id, id));
-
-        const caller = `${this.name}`;
-        const tableName = getTableName(tableSchema);
-
-        await this.logOperations({
-            action: 'DELETE',
-            caller,
-            tableName,
-            recordId: id,
-        });
+        await this.#audit(tx, 'UPDATE', id, payload);
 
         return true;
+      });
+      return updated ? this.findById(id) : null;
+    } catch (err) {
+      if (isDuplicateKey(err)) throw new ConflictError(conflictMessage, { cause: err });
+      throw err;
     }
+  }
+
+  async deleteRecord(id) {
+    if (!id) {
+      throw new Error(`[${this.constructor.name}] deleteRecord requires an id.`);
+    }
+
+    return this.db.transaction(async (tx) => {
+
+      const [result] = await tx.delete(this.table).where(eq(this.table.id, id));
+
+      if (result.affectedRows === 0) return false;
+
+      await this.#audit(tx, 'DELETE', id, null);
+
+      return true;
+    });
+  }
+
+
+  async #audit(tx, action, recordId, details) {
+    await tx.insert(eventLog).values({
+      operationType: action,
+      dbSchema: this.constructor.name,
+      tableName: this.tableName,
+      primaryKeyId: Number(recordId),
+      changeData: details,
+    });
+  }
+}
+
+function isDuplicateKey(err) {
+  return err?.code === 'ER_DUP_ENTRY' || err?.cause?.code === 'ER_DUP_ENTRY';
 }

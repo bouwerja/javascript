@@ -1,39 +1,54 @@
-import { UserModel } from '../models/userModel.js';
+import { NotFoundError, ValidationError } from '../errors.js';
 
-export const getUsers = async (req, res, next) => {
-  try {
-    const users = await UserModel.findAll();
-    res.status(200).json({ success: true, data: users });
-  } catch (error) {
-    next(error);
-  }
-};
 
-export const getUserById = async (req, res, next) => {
-  try {
-    const user = await UserModel.findById(req.params.id);
-    if (!user) {
-      const err = new Error('User not found');
-      err.statusCode = 404;
-      throw err;
-    }
-    res.status(200).json({ success: true, data: user });
-  } catch (error) {
-    next(error);
-  }
-};
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export const createUser = async (req, res, next) => {
-  try {
-    const { name, email } = req.body;
-    if (!name || !email) {
-      const err = new Error('Name and email are required');
-      err.statusCode = 400;
-      throw err;
-    }
-    const newUser = await UserModel.create({ name, email });
-    res.status(201).json({ success: true, data: newUser });
-  } catch (error) {
-    next(error);
+
+export function createUserController({ userModel }) {
+  if (!userModel) {
+    throw new Error('[createUserController] userModel is required');
   }
-};
+
+  return {
+    async list(req, res) {
+      const users = await userModel.findAll();
+      res.status(200).json({ success: true, data: users });
+    },
+
+    async getById(req, res) {
+      const id = parseId(req.params.id);
+
+      const user = await userModel.findById(id);
+      if (!user) throw new NotFoundError('User');
+
+      res.status(200).json({ success: true, data: user });
+    },
+
+    async create(req, res) {
+      const { name, email } = req.body ?? {};
+
+      if (!isNonEmptyString(name) || !isNonEmptyString(email)) {
+        throw new ValidationError('Name and email are required');
+      }
+      if (!EMAIL_PATTERN.test(email.trim())) {
+        throw new ValidationError('Email address is invalid');
+      }
+
+      const user = await userModel.create({ name, email });
+      res.status(201).json({ success: true, data: user });
+    },
+  };
+}
+
+
+function parseId(raw) {
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new ValidationError('Invalid user id');
+  }
+  return id;
+}
+
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}

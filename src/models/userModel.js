@@ -1,67 +1,120 @@
-import { eq, and, like, desc } from "drizzle-orm";
-import { db, users } from "../db/index.js";
+import { eq, and, like, desc } from 'drizzle-orm';
+import { users } from '../db/users.js';
+import { BaseModel } from './baseModel.js';
+import { ValidationError } from '../errors.js';
 
-export class UserModel {
-  constructor({ id, name, email, role = "user", createdAt = null }) {
-    this.id = id;
-    this.name = name;
-    this.email = email;
-    this.role = role;
-    this.createdAt = createdAt;
+export const USER_ROLES = Object.freeze(['user', 'admin']);
+const MAX_PAGE_SIZE = 100;
+
+
+export class UserModel extends BaseModel {
+  constructor(db) {
+    super(db, users);
   }
 
-  toJSON() {
+
+  toRecord(row) {
     return {
-      id: this.id,
-      name: this.name,
-      email: this.email,
-      role: this.role,
-      createdAt: this.createdAt,
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      role: row.role,
+      createdAt: row.createdAt,
     };
   }
 
-  static async findAll() {
-    const rows = await db.select().from(users);
-    return rows.map((row) => new UserModel(row));
-  }
 
-  static async findById(id) {
-    const [row] = await db
+  async findByEmail(email) {
+    const [row] = await this.db
       .select()
       .from(users)
-      .where(eq(users.id, Number(id)));
-    return row ? new UserModel(row) : null;
+      .where(eq(users.email, normaliseEmail(email)));
+    return row ? this.toRecord(row) : null;
   }
 
-  static async create(userData) {
-    const [result] = await db.insert(users).values(userData);
-    const newId = result.insertId || result.id;
-    return new UserModel({ id: newId, ...userData });
-  }
-
-  static async delete(id) {
-    await db.delete(users).where(eq(users.id, Number(id)));
-    return true;
-  }
-
-  static async search({ searchTerm, role, limit = 10, offset = 0 }) {
+  async search({ searchTerm, role, limit = 10, offset = 0 } = {}) {
     const conditions = [];
 
     if (searchTerm) {
-      conditions.push(like(users.email, `%${searchTerm}%`));
+      conditions.push(like(users.email, `%${escapeLike(searchTerm.trim().toLowerCase())}%`));
     }
     if (role) {
-      conditions.push(eq(users.role, role));
+      conditions.push(eq(users.role, assertRole(role)));
     }
 
-    const rows = await db
+    const rows = await this.db
       .select()
       .from(users)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(users.createdAt))
-      .limit(limit)
-      .offset(offset);
+      .limit(toBoundedInt(limit, { min: 1, max: MAX_PAGE_SIZE, fallback: 10 }))
+      .offset(toBoundedInt(offset, { min: 0, max: Number.MAX_SAFE_INTEGER, fallback: 0 }));
 
-    return rows.map((row) => new UserModel(row));
+    return rows.map((row) => this.toRecord(row));
   }
+
+
+  async create({ name, email, role = 'user' }) {
+    return this.insertRecord(
+      {
+        name: normaliseName(name),
+        email: normaliseEmail(email),
+        role: assertRole(role),
+      },
+      { conflictMessage: 'A user with this email already exists' },
+    );
+  }
+
+  async update(id, { name, email, role } = {}) {
+    const changes = {
+      ...(name !== undefined && { name: normaliseName(name) }),
+      ...(email !== undefined && { email: normaliseEmail(email) }),
+      ...(role !== undefined && { role: assertRole(role) }),
+    };
+
+    if (Object.keys(changes).length === 0) {
+      throw new ValidationError('No fields to update');
+    }
+
+    return this.updateRecord(id, changes, {
+      conflictMessage: 'A user with this email already exists',
+    });
+  }
+
+  async delete(id) {
+    return this.deleteRecord(id);
+  }
+}
+
+/* ---------- Data rules (module-private helpers) ---------- */
+
+function normaliseName(name) {
+  if (typeof name !== 'string' || name.trim() === '') {
+    throw new ValidationError('Name must be a non-empty string');
+  }
+  return name.trim();
+}
+
+function normaliseEmail(email) {
+  if (typeof email !== 'string' || email.trim() === '') {
+    throw new ValidationError('Email must be a non-empty string');
+  }
+  return email.trim().toLowerCase();
+}
+
+function assertRole(role) {
+  if (!USER_ROLES.includes(role)) {
+    throw new ValidationError(`Role must be one of: ${USER_ROLES.join(', ')}`);
+  }
+  return role;
+}
+
+function escapeLike(value) {
+  return value.replace(/[\\%_]/g, '\\$&');
+}
+
+function toBoundedInt(value, { min, max, fallback }) {
+  const n = Number(value);
+  if (!Number.isInteger(n)) return fallback;
+  return Math.min(Math.max(n, min), max);
 }
