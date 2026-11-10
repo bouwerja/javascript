@@ -1,26 +1,27 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import apiRouter from './routes/index.js';
+import { createApiRouter } from './routes/index.js';
+import { NotFoundError } from './errors.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
-const app = express();
+export function createApp({ models, config = {} }) {
+  
+  const { corsOrigin = false, apiPrefix = '/api/v1' } = config;
 
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
+  const app = express();
 
-// Single routes entry point
-app.use('/api/v1', apiRouter);
+  app.use(helmet());
+  app.use(cors({ origin: corsOrigin }));
+  app.use(express.json({ limit: '100kb' }));
 
-// Global 404
-app.use((req, res, next) => {
-  const error = new Error(`Route not found - ${req.originalUrl}`);
-  error.statusCode = 404;
-  next(error);
-});
+  app.use(apiPrefix, createApiRouter({ models }));
 
-// Global Error Handler
-app.use(errorHandler);
+  app.use((req, res, next) => {
+    next(new NotFoundError(`Route ${req.method} ${req.originalUrl}`));
+  });
 
-export default app;
+  app.use(errorHandler);
+
+  return app;
+}

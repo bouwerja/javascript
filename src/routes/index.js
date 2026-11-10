@@ -1,17 +1,22 @@
 import { Router } from 'express';
-import { getUsers, getUserById, createUser } from '../controllers/userController.js';
 import { authenticate } from '../middleware/auth.js';
+import { createUserController } from '../controllers/userController.js';
 
-const apiRouter = Router();
+export function createApiRouter({ models }) {
 
-// --- Health Check Route (Unprotected) ---
-apiRouter.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', env: process.env.NODE_ENV });
-});
+  const userController = createUserController({ userModel: models.user });
 
-// --- User Routes (Protected) ---
-apiRouter.get('/users', authenticate, getUsers);
-apiRouter.get('/users/:id', authenticate, getUserById);
-apiRouter.post('/users', authenticate, createUser);
+  const router = Router();
 
-export default apiRouter;
+  router.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+
+  router.use(authenticate);
+
+  router.get('/users', userController.list);
+  router.get('/users/:id', userController.getById);
+  router.post('/users', userController.create);
+
+  return router;
+}
