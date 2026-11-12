@@ -6,7 +6,6 @@ import { startScheduler, stopScheduler } from './jobs/index.js';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
-/* ---------- Configuration (the only place process.env is read for the app) ---------- */
 
 function loadConfig() {
   const nodeEnv = process.env.NODE_ENV;
@@ -50,7 +49,7 @@ async function bootstrap() {
 
   state.server = http.createServer(app);
   await new Promise((resolve, reject) => {
-    state.server.once('error', reject); // e.g. EADDRINUSE
+    state.server.once('error', reject);
     state.server.listen(config.port, resolve);
   });
   console.log(`[Server] API running on http://localhost:${config.port}${config.apiPrefix}`);
@@ -65,7 +64,7 @@ async function bootstrap() {
 
 
 async function shutdown(reason, exitCode = 0) {
-  if (state.shuttingDown) return; // ignore repeated signals
+  if (state.shuttingDown) return;
   state.shuttingDown = true;
   console.log(`[Server] Shutting down (${reason})...`);
 
