@@ -35,3 +35,11 @@ export class ConflictError extends AppError {
     super(message, 409, options);
   }
 }
+
+export class ResponseError extends AppError {
+    constructor(message = 'HTTP error! Status: ', statusCode, options) {
+        const fullMessage = statusCode !== undefined ? `${message}${statusCode}` : message;
+        super(fullMessage, statusCode, options);
+        this.statusCode = statusCode;
+    }
+}

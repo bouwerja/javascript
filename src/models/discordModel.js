@@ -1,9 +1,12 @@
 import { eq, desc } from 'drizzle-orm';
 import { discordMessages } from '../db/discord.js';
 import { BaseModel } from './baseModel.js';
-import { ValidationError } from '../errors.js';
+import { ValidationError, NotFoundError, ResponseError } from '../errors.js';
 
 const MAX_PAGE_SIZE = 100;
+const DISCROD_URL = 'https://discord.com/api/v10'
+
+const MESSAGE_TYPE_GENERAL = 1;
 
 
 export class DiscordModel extends BaseModel {
@@ -32,7 +35,11 @@ export class DiscordModel extends BaseModel {
       .from(discordMessages)
       .where(eq(discordMessages.discordId, String(discordId)));
 
-    return row ? this.toRecord(row) : null;
+    if (!row) {
+      throw new NotFoundError('no records found for discord_id.');
+    }
+
+    return this.toRecord(row);
   }
 
   async findRecent({ limit = 20 } = {}) {
@@ -56,6 +63,10 @@ export class DiscordModel extends BaseModel {
       throw new ValidationError('messageType must be an integer.');
     }
 
+    if (!apiMessage?.content || apiMessage.content.length <= 1) {
+      throw new ValidationError('apiMessage needs to contain content.');
+    }
+
     return this.insertRecord(
       {
         discordId: String(apiMessage.id),
@@ -66,5 +77,35 @@ export class DiscordModel extends BaseModel {
       },
       { conflictMessage: 'This Discord message has already been recorded.' },
     );
+  }
+
+  async sendDiscordMessage(apiMessage, messageType) {
+
+    this.recordSentMessage(apiMessage, messageType);
+
+    const url = DISCROD_URL + `/channels/${apiMessage.channel_id}/message`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        content: apiMessage.content,
+        tts: false,
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      if (response.status) {
+        const data = await response.json();
+        const message = 'Discord Api response message ' + data.message;
+        throw new ResponseError(message, response.status);
+      }
+      throw new ResponseError('Discord Api response error: ', response.status);
+    }
+
   }
 }

@@ -13,6 +13,17 @@ import { createInMemoryModel, buildDiscordApiMessage } from '../../helpers/index
 
 describe('DiscordModel', () => {
   describe('recordSentMessage', () => {
+
+    test('sending discord message', async () => {
+      const { model } = createInMemoryModel(DiscordModel);
+      const apiMessage = buildDiscordApiMessage({ 
+        channel_id: process.env.DISCORD_GENERAL_CHANNEL_ID, 
+        content: 'This is a test message' 
+      });
+      
+      await model.sendDiscordMessage(apiMessage, { messageType: 1 })
+    });
+
     test('stores the message with its 64-bit Discord ids intact', async () => {
       const { model } = createInMemoryModel(DiscordModel);
       const apiMessage = buildDiscordApiMessage();
@@ -54,5 +65,6 @@ describe('DiscordModel', () => {
         { code: 'ER_DATA_TOO_LONG' },
       );
     });
+
   });
 });
