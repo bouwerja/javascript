@@ -75,7 +75,7 @@ export class DiscordModel extends BaseModel {
   }
 
   async sendDiscordMessage(apiMessage, messageType) {
-    if (!apiMessage?.channelId) {
+    if (!apiMessage?.channel_id) {
       throw new ValidationError("channelId is required.");
     }
     if (!apiMessage?.content || apiMessage.content.length <= 1) {
@@ -100,8 +100,7 @@ export class DiscordModel extends BaseModel {
       }),
     });
 
-    const text = await response.text();
-    let data = text ? JSON.parse(text) : null;
+    const data = await response.json();
 
     if (!response.ok) {
       const detail = data?.message ?? "no error message returned";
