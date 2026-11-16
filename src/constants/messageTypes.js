@@ -1,0 +1,5 @@
+export const messageTypes = {
+  DISCORD_GENERAL_CHANNEL: "1383834585900650510",
+
+  GENERAL_MESSAGE: 1,
+};

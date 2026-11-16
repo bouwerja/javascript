@@ -2,12 +2,11 @@ import { eq, desc } from "drizzle-orm";
 import { discordMessages } from "../db/discord.js";
 import { BaseModel } from "./baseModel.js";
 import { ValidationError, NotFoundError, ResponseError } from "../errors.js";
+import { messageTypes } from "../constants/messageTypes.js";
 
 const MAX_PAGE_SIZE = 100;
-const DISCROD_URL = "https://discord.com/api/v10";
+const DISCORD_URL = "https://discord.com/api/v10";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-
-const MESSAGE_TYPE_GENERAL = 1;
 
 export class DiscordModel extends BaseModel {
   constructor(db) {
@@ -49,12 +48,12 @@ export class DiscordModel extends BaseModel {
     return rows.map((row) => this.toRecord(row));
   }
 
-  async recordSentMessage(apiMessage, { messageType }) {
+  async recordSentMessage(apiMessage, { messageTypeId }) {
     if (!apiMessage?.id || !apiMessage?.channel_id) {
       throw new ValidationError("apiMessage must include id and channel_id.");
     }
 
-    if (!Number.isInteger(messageType)) {
+    if (!Number.isInteger(messageTypeId)) {
       throw new ValidationError("messageType must be an integer.");
     }
 
@@ -67,25 +66,25 @@ export class DiscordModel extends BaseModel {
         discordId: String(apiMessage.id),
         discordChannel: String(apiMessage.channel_id),
         messageText: apiMessage.content ?? "",
-        messageType,
+        messageType: messageTypeId,
         details: apiMessage,
       },
       { conflictMessage: "This Discord message has already been recorded." },
     );
   }
 
-  async sendDiscordMessage(apiMessage, messageType) {
+  async sendMessage(apiMessage, messageType) {
     if (!apiMessage?.channel_id) {
       throw new ValidationError("channelId is required.");
     }
     if (!apiMessage?.content || apiMessage.content.length <= 1) {
       throw new ValidationError("contnet is required.");
     }
-    if (!Number.isInteger(apiMessage?.messageType)) {
-      throw new ValidationError("messageType must be integer.");
+    if (!messageType) {
+      throw new ValidationError("message type is required.");
     }
 
-    const url = DISCROD_URL + `/channels/${apiMessage.channel_id}/messages`;
+    const url = DISCORD_URL + `/channels/${apiMessage.channel_id}/messages`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -112,12 +111,26 @@ export class DiscordModel extends BaseModel {
     }
 
     try {
-      return await this.recordSentMessage(data, { messageType });
+      const messageTypeId = this.#getMessageTypes(messageType);
+      return await this.recordSentMessage(data, { messageTypeId });
     } catch (err) {
       console.error(
-        `Discord message ${data?.id} was sent but could not be recorded.`,
+        `Discord message ${data?.id} was sent but could not be recorded.\nError message: ` +
+          err.message,
       );
       throw err;
+    }
+  }
+
+  #getMessageTypes(messageType) {
+    try {
+      if (!Object.hasOwn(messageTypes, messageType)) {
+        throw new Error("Message type not included in valid types.");
+      }
+
+      return messageTypes[messageType];
+    } catch (error) {
+      throw new Error(error.message);
     }
   }
 }

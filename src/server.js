@@ -16,6 +16,9 @@ function loadConfig() {
   if (nodeEnv === 'production' && process.env.AUTH_DEV_BYPASS === 'true') {
     throw new Error('AUTH_DEV_BYPASS must not be enabled in production.');
   }
+  if (nodeEnv === 'development') {
+    console.log('[Server] Running in development mode...\n');
+  }
 
   return {
     nodeEnv,

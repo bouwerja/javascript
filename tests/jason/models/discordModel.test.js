@@ -4,31 +4,35 @@
  * No Discord API calls are made here: DiscordModel only records messages that
  * a job has already sent. The schema's unique index on discord_id is enforced.
  */
-import { describe, test } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
 
-import { DiscordModel } from '../../../src/models/discordModel.js';
-import { ConflictError, ValidationError } from '../../../src/errors.js';
-import { createInMemoryModel, buildDiscordApiMessage } from '../../helpers/index.js';
+import { DiscordModel } from "../../../src/models/discordModel.js";
+import { ConflictError, ValidationError } from "../../../src/errors.js";
+import {
+  createInMemoryModel,
+  buildDiscordApiMessage,
+} from "../../helpers/index.js";
 
-describe('DiscordModel', () => {
-  describe('recordSentMessage', () => {
-
-    test('sending discord message', async () => {
+describe("DiscordModel", () => {
+  describe("recordSentMessage", () => {
+    test("sending discord message", async () => {
       const { model } = createInMemoryModel(DiscordModel);
-      const apiMessage = buildDiscordApiMessage({ 
-        channel_id: process.env.DISCORD_GENERAL_CHANNEL_ID, 
-        content: 'This is a test message' 
+      const apiMessage = buildDiscordApiMessage({
+        channel_id: process.env.DISCORD_GENERAL_CHANNEL_ID,
+        content: "This is a test message",
       });
-      
-      await model.sendDiscordMessage(apiMessage, { messageType: 1 })
+
+      await model.sendMessage(apiMessage, "GENERAL_MESSAGE");
     });
 
-    test('stores the message with its 64-bit Discord ids intact', async () => {
+    test("stores the message with its 64-bit Discord ids intact", async () => {
       const { model } = createInMemoryModel(DiscordModel);
       const apiMessage = buildDiscordApiMessage();
 
-      const record = await model.recordSentMessage(apiMessage, { messageType: 1 });
+      const record = await model.recordSentMessage(apiMessage, {
+        messageTypeId: 1,
+      });
 
       assert.equal(record.discordId, apiMessage.id);
       assert.equal(record.discordChannel, apiMessage.channel_id);
@@ -36,35 +40,34 @@ describe('DiscordModel', () => {
       assert.deepEqual(record.details, apiMessage);
     });
 
-    test('rejects recording the same Discord message twice', async () => {
+    test("rejects recording the same Discord message twice", async () => {
       const { model } = createInMemoryModel(DiscordModel);
       const apiMessage = buildDiscordApiMessage();
-      await model.recordSentMessage(apiMessage, { messageType: 1 });
+      await model.recordSentMessage(apiMessage, { messageTypeId: 1 });
 
       await assert.rejects(
-        model.recordSentMessage(apiMessage, { messageType: 1 }),
+        model.recordSentMessage(apiMessage, { messageTypeId: 1 }),
         ConflictError,
       );
     });
 
-    test('rejects a message without an id', async () => {
+    test("rejects a message without an id", async () => {
       const { model } = createInMemoryModel(DiscordModel);
 
       await assert.rejects(
-        model.recordSentMessage({ channel_id: '1' }, { messageType: 1 }),
+        model.recordSentMessage({ channel_id: "1" }, { messageTypeId: 1 }),
         ValidationError,
       );
     });
 
-    test('rejects text longer than the column allows (2 000 characters)', async () => {
+    test("rejects text longer than the column allows (2 000 characters)", async () => {
       const { model } = createInMemoryModel(DiscordModel);
-      const apiMessage = buildDiscordApiMessage({ content: 'x'.repeat(2001) });
+      const apiMessage = buildDiscordApiMessage({ content: "x".repeat(2001) });
 
       await assert.rejects(
-        model.recordSentMessage(apiMessage, { messageType: 1 }),
-        { code: 'ER_DATA_TOO_LONG' },
+        model.recordSentMessage(apiMessage, { messageTypeId: 1 }),
+        { code: "ER_DATA_TOO_LONG" },
       );
     });
-
   });
 });

@@ -18,6 +18,7 @@ export class BaseModel {
 
 
   toRecord(row) {
+    if (!row) return null;
     return { ...row };
   }
 
