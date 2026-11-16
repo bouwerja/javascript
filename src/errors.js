@@ -37,9 +37,8 @@ export class ConflictError extends AppError {
 }
 
 export class ResponseError extends AppError {
-    constructor(message = 'HTTP error! Status: ', statusCode, options) {
-        const fullMessage = statusCode !== undefined ? `${message}${statusCode}` : message;
-        super(fullMessage, statusCode, options);
-        this.statusCode = statusCode;
+    constructor(message = 'Upstream service request failed', upstreamStatus, options) {
+        super(message, 502, options);
+        this.upstreamStatus = upstreamStatus;
     }
 }
