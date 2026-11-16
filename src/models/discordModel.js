@@ -73,6 +73,13 @@ export class DiscordModel extends BaseModel {
     );
   }
 
+  // Please rework send & record message
+  // send message should only take text input and channel identifier (text)
+  // record message should then record channel identifier (text) and channel id
+  async reworkSendMessage() {
+    return null;
+  }
+
   async sendMessage(apiMessage, messageType) {
     if (!apiMessage?.channel_id) {
       throw new ValidationError("channelId is required.");
