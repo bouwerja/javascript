@@ -95,8 +95,6 @@ export class DiscordModel extends BaseModel {
         tts: false,
       })
     });
-
-    const data = await response.json();
     
     if (!response.ok) {
       if (response.status) {
