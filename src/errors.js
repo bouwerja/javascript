@@ -37,7 +37,7 @@ export class ConflictError extends AppError {
 }
 
 export class ResponseError extends AppError {
-    constructor(message = 'Upstream service request failed', upstreamStatus, options) {
+    constructor(message = 'Invalid response from an UPSTREAM server.', upstreamStatus, options) {
         super(message, 502, options);
         this.upstreamStatus = upstreamStatus;
     }
