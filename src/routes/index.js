@@ -16,7 +16,7 @@ export function createApiRouter({ models }) {
 
   router.get('/users', userController.list);
   router.get('/users/:id', userController.getById);
-  router.post('/users', userController.create);
+  router.post('/users/create', userController.create);
 
   return router;
 }
