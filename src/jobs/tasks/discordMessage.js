@@ -1,19 +1,15 @@
 import { runJob } from "../runJob.js";
 import { DiscordModel } from "../../models/discordModel.js";
+import { JOBS_USER_ID } from "../../constants/systemUsers.js";
 
 await runJob("discord-message", async ({ db, params, signal, log }) => {
   const discordModel = new DiscordModel(db);
 
   if (signal.aborted) return;
 
-  const messagePayload = {
-    id: String(1_300_000_000_000_000_000n + BigInt(n)),
-    channel_id: "1300000000000000001",
-    content: `Test message ${n}`,
-    allowed_mentions: { parse: [] },
-  };
+  const messageText = "This is a test message";
 
-  await discordModel.sendMessage(messagePayload, "GENERAL_MESSAGE");
+  await discordModel.sendMessage(messageText, "GENERAL_MESSAGE", JOBS_USER_ID);
 
-  log(`Sent and recorded Discord message`);
+  log('Sent and recorded Discord message');
 });

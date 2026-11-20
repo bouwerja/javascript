@@ -5,18 +5,12 @@ export const discordMessages = mysqlTable('discord_messages', {
   discordId: varchar('discord_id', { length: 25 }).notNull(),
   discordChannel: varchar('discord_channel', { length: 25 }).notNull(),
   messageText: varchar('message_text', { length: 2000 }).notNull(),
-  messageType: int('message_type_id').notNull(),
+  channelName: varchar('channel_name', { lenght: 250 }).notNull(),
   details: json('details'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
   uniqueIndex('discord_messages_discord_id_unique').on(table.discordId),
 ]);
-
-export const messageType = mysqlTable('discord_message_types', {
-    id: int('id').autoincrement().primaryKey(),
-    type: varchar('type', { length: 255 }).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-});
 
 export const discordUsers = mysqlTable('discord_users', {
   id: int('id').autoincrement().primaryKey(),

@@ -48,50 +48,58 @@ export class DiscordModel extends BaseModel {
     return rows.map((row) => this.toRecord(row));
   }
 
-  async recordSentMessage(apiMessage, { messageTypeId }) {
-    if (!apiMessage?.id || !apiMessage?.channel_id) {
-      throw new ValidationError("apiMessage must include id and channel_id.");
-    }
-
-    if (!Number.isInteger(messageTypeId)) {
-      throw new ValidationError("messageType must be an integer.");
-    }
-
-    if (!apiMessage?.content || apiMessage.content.length <= 1) {
-      throw new ValidationError("apiMessage needs to contain content.");
+  async recordSentMessage(apiMessage) {
+    if (!apiMessage?.userId || !apiMessage?.channelId || apiMessage?.channelName) {
+      throw new ValidationError("apiMessage must include userId and channelId and channelName.");
     }
 
     return this.insertRecord(
       {
-        discordId: String(apiMessage.id),
-        discordChannel: String(apiMessage.channel_id),
+        discordId: String(apiMessage.userId),
+        discordChannel: String(apiMessage.channelId),
         messageText: apiMessage.content ?? "",
-        messageType: messageTypeId,
+        channelName: apiMessage.channelName,
         details: apiMessage,
       },
       { conflictMessage: "This Discord message has already been recorded." },
     );
   }
 
-  // Please rework send & record message
-  // send message should only take text input and channel identifier (text)
-  // record message should then record channel identifier (text) and channel id
-  async reworkSendMessage() {
-    return null;
-  }
+  async sendMessage(textMessage, channel, userId) {
+    if (
+      !textMessage ||
+      textMessage.length <= 1 ||
+      !(typeof textMessage !== string)
+    ) {
+      throw new ValidationError(
+        "Input text message is required and must be a string value.",
+      );
+    }
+    if (!userId || !Number.isInteger(userId)) {
+      throw new ValidationError(
+        "User ID is required and must be a integer value."
+      );
+    }
+    if (!channel || channel.length <= 1 || !(typeof channel !== string)) {
+      throw new ValidationError(
+        "Channel is required and must be a string value.",
+      );
+    }
 
-  async sendMessage(apiMessage, messageType) {
-    if (!apiMessage?.channel_id) {
-      throw new ValidationError("channelId is required.");
-    }
-    if (!apiMessage?.content || apiMessage.content.length <= 1) {
-      throw new ValidationError("contnet is required.");
-    }
-    if (!messageType) {
-      throw new ValidationError("message type is required.");
+    let channelId = null;
+    try {
+      channelId = this.#getMessageTypes(channel);
+    } catch (err) {
+      throw err;
     }
 
-    const url = DISCORD_URL + `/channels/${apiMessage.channel_id}/messages`;
+    const url = DISCORD_URL + `/channels/${channelId}/messages`;
+
+    const payload = {
+      content: textMessage,
+      tts: false,
+      allowed_mentions: { parse: [] },
+    };
 
     const response = await fetch(url, {
       method: "POST",
@@ -99,32 +107,25 @@ export class DiscordModel extends BaseModel {
         Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        content: apiMessage.content,
-        tts: false,
-        allowed_mentions: { parse: [] },
-      }),
+      body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      const detail = data?.message ?? "no error message returned";
       throw new ResponseError(
         `Discord API request failed (${response.status}: ${detail}). Status: `,
-        502,
-        { cause: { discordStatus: response.status, body: data ?? text } },
+        response.status,
       );
     }
 
     try {
-      const messageTypeId = this.#getMessageTypes(messageType);
-      return await this.recordSentMessage(data, { messageTypeId });
+      this.recordSentMessage({
+        discordId: userId,
+        discordChannel: channelId,
+        messageText: textMessage,
+        channelName: channel,
+        details: payload,
+      });
     } catch (err) {
-      console.error(
-        `Discord message ${data?.id} was sent but could not be recorded.\nError message: ` +
-          err.message,
-      );
       throw err;
     }
   }
