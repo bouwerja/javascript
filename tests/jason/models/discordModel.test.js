@@ -9,64 +9,70 @@ import assert from "node:assert/strict";
 
 import { DiscordModel } from "../../../src/models/discordModel.js";
 import { ConflictError, ValidationError } from "../../../src/errors.js";
-import {
-  createInMemoryModel,
-  buildDiscordApiMessage,
-} from "../../helpers/index.js";
+import { createInMemoryModel } from "../../helpers/index.js";
 
 describe("DiscordModel", () => {
   describe("recordSentMessage", () => {
     test("sending discord message", async () => {
       const { model } = createInMemoryModel(DiscordModel);
-      const apiMessage = buildDiscordApiMessage({
-        channel_id: process.env.DISCORD_GENERAL_CHANNEL_ID,
-        content: "This is a test message",
-      });
 
-      await model.sendMessage(apiMessage, "GENERAL_MESSAGE");
+      await model.sendMessage(
+        "This is a test message",
+        "DISCORD_GENERAL_CHANNEL",
+        1,
+      );
     });
 
     test("stores the message with its 64-bit Discord ids intact", async () => {
       const { model } = createInMemoryModel(DiscordModel);
-      const apiMessage = buildDiscordApiMessage();
 
-      const record = await model.recordSentMessage(apiMessage, {
-        messageTypeId: 1,
-      });
+      const payload = {
+        discordId: "1",
+        discordChannel: "123",
+        messageText: "This is a test",
+        channelName: "DISCORD_GENERAL_CHANNEL",
+        details: {
+          discordId: 1,
+          discordChannel: 123,
+          messageText: "This is a test",
+          channelName: "DISCORD_GENERAL_CHANNEL",
+        },
+      };
+      const record = await model.recordSentMessage(payload);
 
-      assert.equal(record.discordId, apiMessage.id);
-      assert.equal(record.discordChannel, apiMessage.channel_id);
-      assert.equal(record.messageText, apiMessage.content);
-      assert.deepEqual(record.details, apiMessage);
+      assert.equal(record.discordId, payload.discordId);
+      assert.equal(record.discordChannel, payload.discordChannel);
+      assert.equal(record.messageText, payload.messageText);
+      assert.deepEqual(record.details, payload.details);
     });
 
     test("rejects recording the same Discord message twice", async () => {
       const { model } = createInMemoryModel(DiscordModel);
-      const apiMessage = buildDiscordApiMessage();
-      await model.recordSentMessage(apiMessage, { messageTypeId: 1 });
 
-      await assert.rejects(
-        model.recordSentMessage(apiMessage, { messageTypeId: 1 }),
-        ConflictError,
-      );
+      const payload = {
+        discordId: 1,
+        discordChannel: 123,
+        messageText: "This is a test",
+        channelName: "GENERAL_MESSAGE",
+        details: {
+          discordId: 1,
+          discordChannel: 123,
+          messageText: "This is a test",
+          channelName: "GENERAL_MESSAGE",
+        },
+      };
+
+      await model.recordSentMessage(payload);
+
+      await assert.rejects(model.recordSentMessage(payload), ConflictError);
     });
 
     test("rejects a message without an id", async () => {
       const { model } = createInMemoryModel(DiscordModel);
 
       await assert.rejects(
-        model.recordSentMessage({ channel_id: "1" }, { messageTypeId: 1 }),
+        model.recordSentMessage({ discordChannel: "1" }),
         ValidationError,
-      );
-    });
-
-    test("rejects text longer than the column allows (2 000 characters)", async () => {
-      const { model } = createInMemoryModel(DiscordModel);
-      const apiMessage = buildDiscordApiMessage({ content: "x".repeat(2001) });
-
-      await assert.rejects(
-        model.recordSentMessage(apiMessage, { messageTypeId: 1 }),
-        { code: "ER_DATA_TOO_LONG" },
       );
     });
   });

@@ -49,17 +49,23 @@ export class DiscordModel extends BaseModel {
   }
 
   async recordSentMessage(apiMessage) {
-    if (!apiMessage?.userId || !apiMessage?.channelId || apiMessage?.channelName) {
-      throw new ValidationError("apiMessage must include userId and channelId and channelName.");
+    if (
+      !apiMessage?.discordId ||
+      !apiMessage?.discordChannel ||
+      !apiMessage?.channelName
+    ) {
+      throw new ValidationError(
+        "payload must include userId and channelId and channelName.",
+      );
     }
 
     return this.insertRecord(
       {
-        discordId: String(apiMessage.userId),
-        discordChannel: String(apiMessage.channelId),
-        messageText: apiMessage.content ?? "",
+        discordId: String(apiMessage.discordId),
+        discordChannel: String(apiMessage.discordChannel),
+        messageText: apiMessage.messageText ?? "",
         channelName: apiMessage.channelName,
-        details: apiMessage,
+        details: apiMessage.details,
       },
       { conflictMessage: "This Discord message has already been recorded." },
     );
@@ -68,8 +74,8 @@ export class DiscordModel extends BaseModel {
   async sendMessage(textMessage, channel, userId) {
     if (
       !textMessage ||
-      textMessage.length <= 1 ||
-      !(typeof textMessage !== string)
+      textMessage?.length <= 1 ||
+      typeof textMessage !== "string"
     ) {
       throw new ValidationError(
         "Input text message is required and must be a string value.",
@@ -77,10 +83,10 @@ export class DiscordModel extends BaseModel {
     }
     if (!userId || !Number.isInteger(userId)) {
       throw new ValidationError(
-        "User ID is required and must be a integer value."
+        "User ID is required and must be a integer value.",
       );
     }
-    if (!channel || channel.length <= 1 || !(typeof channel !== string)) {
+    if (!channel || channel?.length <= 1 || typeof channel !== "string") {
       throw new ValidationError(
         "Channel is required and must be a string value.",
       );
@@ -112,7 +118,7 @@ export class DiscordModel extends BaseModel {
 
     if (!response.ok) {
       throw new ResponseError(
-        `Discord API request failed (${response.status}: ${detail}). Status: `,
+        `Discord API request failed (${response.status}). `,
         response.status,
       );
     }
